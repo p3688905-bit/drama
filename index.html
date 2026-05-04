@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>戲曲術語互動學習網</title>
+    <!-- 引入 Tailwind CSS 以進行快速且美觀的排版 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 FontAwesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 設定客製化字型與翻轉動畫樣式 -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Serif TC', serif;
+            background-color: #faf5f0;
+            background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23d0a373" fill-opacity="0.1"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+        }
+
+        /* 閃卡 3D 翻轉效果 */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-preserve-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .transition-transform { transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); }
+        
+        /* 隱藏捲軸但保持可捲動 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col">
+
+    <!-- 頂部導航列 -->
+    <header class="bg-red-900 text-yellow-100 shadow-lg border-b-4 border-yellow-600 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h1 class="text-3xl font-bold tracking-widest flex items-center gap-3">
+                <i class="fa-solid fa-masks-theater text-yellow-500"></i>
+                戲曲術語補充
+            </h1>
+            
+            <div class="flex gap-2 w-full sm:w-auto">
+                <div class="relative flex-grow sm:flex-grow-0">
+                    <input type="text" id="searchInput" placeholder="搜尋術語..." 
+                        class="w-full sm:w-48 pl-10 pr-4 py-2 rounded-full border-2 border-red-800 bg-red-950/50 text-yellow-100 placeholder-yellow-100/50 focus:outline-none focus:border-yellow-500 transition-colors">
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-yellow-500/70"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 模式切換按鈕 -->
+    <div class="container mx-auto px-4 mt-6 flex justify-center gap-4">
+        <button id="btnListView" class="px-6 py-2 rounded-full font-bold transition-all border-2 border-red-800 bg-red-800 text-white shadow-md hover:bg-red-700">
+            <i class="fa-solid fa-list-ul mr-2"></i>列表模式
+        </button>
+        <button id="btnFlashcardView" class="px-6 py-2 rounded-full font-bold transition-all border-2 border-red-800 bg-transparent text-red-800 shadow-sm hover:bg-red-100">
+            <i class="fa-solid fa-clone mr-2"></i>閃卡模式
+        </button>
+    </div>
+
+    <!-- 主要內容區 -->
+    <main class="container mx-auto px-4 py-8 flex-grow">
+        
+        <!-- 列表模式容器 -->
+        <div id="listView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- 內容由 JavaScript 動態生成 -->
+        </div>
+
+        <!-- 閃卡模式容器 -->
+        <div id="flashcardView" class="hidden flex-col items-center max-w-2xl mx-auto w-full">
+            <div class="flex justify-between items-center w-full mb-4 text-red-800 font-bold">
+                <span id="flashcardCounter" class="bg-red-100 px-4 py-1 rounded-full shadow-inner border border-red-200">1 / 10</span>
+                <span class="text-sm opacity-70"><i class="fa-solid fa-hand-pointer mr-1"></i>點擊卡片翻面</span>
+            </div>
+
+            <!-- 閃卡本體 -->
+            <div class="w-full h-80 sm:h-96 perspective-1000 cursor-pointer group" id="flashcard">
+                <div class="relative w-full h-full transition-transform transform-style-preserve-3d" id="flashcardInner">
+                    
+                    <!-- 卡片正面 (術語) -->
+                    <div class="absolute w-full h-full backface-hidden bg-white border-4 border-yellow-600 rounded-2xl shadow-xl flex items-center justify-center p-8 text-center bg-gradient-to-br from-white to-orange-50">
+                        <div class="absolute top-4 left-4 text-yellow-500 opacity-30 text-4xl"><i class="fa-solid fa-quote-left"></i></div>
+                        <h2 id="cardTerm" class="text-6xl sm:text-7xl font-bold text-red-900 tracking-widest drop-shadow-sm"></h2>
+                        <div class="absolute bottom-4 right-4 text-yellow-500 opacity-30 text-4xl"><i class="fa-solid fa-quote-right"></i></div>
+                    </div>
+
+                    <!-- 卡片背面 (解釋) -->
+                    <div class="absolute w-full h-full backface-hidden bg-red-900 border-4 border-yellow-500 rounded-2xl shadow-xl p-8 overflow-y-auto no-scrollbar rotate-y-180 flex flex-col justify-center bg-[url('data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 0h20v20H0V0zm10 17a7 7 0 1 0 0-14 7 7 0 0 0 0 14z\' fill=\'%23000000\' fill-opacity=\'0.03\' fill-rule=\'evenodd\'/%3E%3C/svg%3E')]">
+                        <h3 class="text-2xl font-bold text-yellow-400 mb-4 border-b border-yellow-600/50 pb-2 text-center" id="cardTermBack"></h3>
+                        <p id="cardDef" class="text-lg sm:text-xl text-yellow-50 leading-relaxed text-justify"></p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 閃卡控制按鈕 -->
+            <div class="flex justify-between w-full mt-8 gap-4">
+                <button id="btnPrev" class="flex-1 bg-white border-2 border-red-800 text-red-800 py-3 rounded-xl font-bold hover:bg-red-50 transition shadow-md flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> 上一個
+                </button>
+                <button id="btnNext" class="flex-1 bg-red-800 border-2 border-red-800 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition shadow-md flex justify-center items-center gap-2">
+                    下一個 <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 無搜尋結果提示 -->
+        <div id="noResults" class="hidden text-center py-20 text-gray-500">
+            <i class="fa-solid fa-face-frown-open text-6xl mb-4 text-gray-300"></i>
+            <p class="text-xl">找不到符合的術語</p>
+        </div>
+
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="bg-red-950 text-yellow-100/50 py-6 text-center text-sm border-t border-red-900">
+        <p>戲曲術語補充學習教材 &copy; 互動式版</p>
+    </footer>
+
+    <script>
+        // 戲曲術語資料
+        const operaTerms = [
+            { term: '上', definition: '演員出場稱為「上場」，簡稱為上。' },
+            { term: '下', definition: '演員入場稱為「下場」，簡稱為「下」。' },
+            { term: '介', definition: '等同古劇的「科」，指演員的動作或做手，如「掃地介」、「偷聽介」、「上介」、「下介」、「打介」等。' },
+            { term: '一才', definition: '鑼鼓點名稱，是指在該鑼鼓點中，敲鑼一下；現在有些一槌的打法並不只是敲鑼一下，是加了花式的打法。' },
+            { term: '口古', definition: '說白體系中的一種形式，句末須押韻的口白。結構分上句和下句，傳統上每個上句必須緊接下句。收仄聲為上句，收平聲為下句，每句結束都有一槌鑼鼓襯托。現今不少編劇和撰曲者在口古上句和下句間，加入唱段或其他說白形式。' },
+            { term: '台口', definition: '演區面向觀眾的前方。' },
+            { term: '排子頭', definition: '鑼鼓點名稱，用於牌子的起板，今也用作小曲的起板，尤適合散板起的小曲。「牌」也作「排」。' },
+            { term: '滾花', definition: '板腔體系中的一種板式，屬散板節奏。梆子類和二黃類都有滾花，但句式及收音完全不同。平喉士工滾花上、下句分別收於尺及上；子喉士工滾花上、下句分別收於上及合；合尺滾花平、子喉同腔，上、下句分別收於上及尺。士工滾花通常用於一般情緒，合尺滾花則慣常用於表達較深入或悲哀的感情。' },
+            { term: '長(句)二流', definition: '每半句都分別有起式、正文和煞尾。起式由兩頓組成，上句上半句及下句下半句要收下平聲的（合）音，其餘二頓可平可仄。正文以七字句為一頓，頓數不限，但尾頓需要與煞尾平仄相反。煞尾祇有一頓。' },
+            { term: '關目', definition: '是演員運用眼睛，配合面部及手部動作，來表現各種表情的戲曲表演技巧。粵劇有所謂「面口生，生在眼」的說法，京劇表演家蓋叫天(1888-1971)也說過：「唱、做、唸、打都要用眼來領神。」可見眼神的運用在戲曲的表演是非常重要。在元雜劇，「關目」一詞本意為「關鍵、眼目」，是指劇本中的結構、關鍵情節的安排和構思，與粵劇的「關目」定義不同。' },
+            // --- 以下為從《紫釵記》劇本中補充的術語 ---
+            { term: '秋闈', definition: '明、清時每三年的八月間，在各省省城舉行一次考試，稱為鄉試，又稱為秋闈。' },
+            { term: '香車', definition: '古代塗有香料供貴婦人乘坐的華麗車子。' },
+            { term: '子期遇伯牙', definition: '比喻知音。伯牙善鼓琴，鍾子期善聽。鍾子期死後，伯牙破琴絕弦，終身不復鼓琴，因為「世無足復為鼓琴者」。' },
+            { term: '中式', definition: '科舉制度中，鄉試或會試合格者稱為中式舉人或進士（中式即合於標準之意）。' },
+            { term: '文星', definition: '也稱文昌星、文曲星。古人以為此星主功名、祿位，故讀書人多崇祀，以祈功名順遂。' },
+            { term: '指鹿為馬', definition: '比喻有意顛倒黑白、混淆是非。源於趙高獻鹿謂馬的故事。' },
+            { term: '折蟾宮桂', definition: '指科舉及第（折桂）。之所以說「蟾宮桂」是因為神話傳說月中有桂樹，而蟾宮是指月宮。' },
+            { term: '槐蔭', definition: '借指男女相會之地。源自二十四孝故事中，董永與仙女於槐陰會所相會的故事。' }
+        ];
+
+        let currentTerms = [...operaTerms];
+        let currentMode = 'list'; // 'list' or 'flashcard'
+        let flashcardIndex = 0;
+        let isFlipped = false;
+
+        // DOM 元素取得
+        const listViewEl = document.getElementById('listView');
+        const flashcardViewEl = document.getElementById('flashcardView');
+        const noResultsEl = document.getElementById('noResults');
+        const searchInput = document.getElementById('searchInput');
+        
+        const btnListView = document.getElementById('btnListView');
+        const btnFlashcardView = document.getElementById('btnFlashcardView');
+        
+        const flashcardInner = document.getElementById('flashcardInner');
+        const cardTerm = document.getElementById('cardTerm');
+        const cardTermBack = document.getElementById('cardTermBack');
+        const cardDef = document.getElementById('cardDef');
+        const flashcardCounter = document.getElementById('flashcardCounter');
+        
+        const btnPrev = document.getElementById('btnPrev');
+        const btnNext = document.getElementById('btnNext');
+
+        // 初始化
+        function init() {
+            renderList();
+            setupEventListeners();
+        }
+
+        // 渲染列表模式
+        function renderList() {
+            listViewEl.innerHTML = '';
+            
+            if (currentTerms.length === 0) {
+                listViewEl.classList.add('hidden');
+                noResultsEl.classList.remove('hidden');
+                return;
+            }
+            
+            noResultsEl.classList.add('hidden');
+            listViewEl.classList.remove('hidden');
+
+            currentTerms.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-md border-t-4 border-red-800 overflow-hidden hover:shadow-lg transition duration-300';
+                card.innerHTML = `
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold text-red-900 mb-3 flex items-center gap-2">
+                            <span class="w-2 h-6 bg-yellow-500 rounded-sm inline-block"></span>
+                            ${item.term}
+                        </h3>
+                        <p class="text-gray-700 leading-relaxed text-justify">${item.definition}</p>
+                    </div>
+                `;
+                listViewEl.appendChild(card);
+            });
+        }
+
+        // 更新閃卡內容
+        function updateFlashcard() {
+            if (currentTerms.length === 0) {
+                flashcardViewEl.classList.add('hidden');
+                noResultsEl.classList.remove('hidden');
+                return;
+            }
+
+            // 若索引超出範圍則重置
+            if (flashcardIndex >= currentTerms.length) flashcardIndex = 0;
+
+            const currentItem = currentTerms[flashcardIndex];
+            cardTerm.textContent = currentItem.term;
+            cardTermBack.textContent = currentItem.term;
+            cardDef.textContent = currentItem.definition;
+            flashcardCounter.textContent = `${flashcardIndex + 1} / ${currentTerms.length}`;
+            
+            // 確保翻轉回正面
+            if (isFlipped) {
+                flashcardInner.classList.remove('rotate-y-180');
+                isFlipped = false;
+            }
+        }
+
+        // 切換顯示模式
+        function setMode(mode) {
+            currentMode = mode;
+            if (mode === 'list') {
+                btnListView.className = "px-6 py-2 rounded-full font-bold transition-all border-2 border-red-800 bg-red-800 text-white shadow-md hover:bg-red-700";
+                btnFlashcardView.className = "px-6 py-2 rounded-full font-bold transition-all border-2 border-red-800 bg-transparent text-red-800 shadow-sm hover:bg-red-100";
+                
+                flashcardViewEl.classList.add('hidden');
+                renderList();
+            } else {
+                btnFlashcardView.className = "px-6 py-2 rounded-full font-bold transition-all border-2 border-red-800 bg-red-800 text-white shadow-md hover:bg-red-700";
+                btnListView.className = "px-6 py-2 rounded-full font-bold transition-all border-2 border-red-800 bg-transparent text-red-800 shadow-sm hover:bg-red-100";
+                
+                listViewEl.classList.add('hidden');
+                noResultsEl.classList.add('hidden');
+                flashcardViewEl.classList.remove('hidden');
+                flashcardViewEl.classList.add('flex');
+                updateFlashcard();
+            }
+        }
+
+        // 搜尋處理
+        function handleSearch(e) {
+            const query = e.target.value.trim().toLowerCase();
+            currentTerms = operaTerms.filter(item => 
+                item.term.toLowerCase().includes(query) || 
+                item.definition.toLowerCase().includes(query)
+            );
+            
+            flashcardIndex = 0; // 重置閃卡索引
+
+            if (currentMode === 'list') {
+                renderList();
+            } else {
+                if (currentTerms.length === 0) {
+                    flashcardViewEl.classList.remove('flex');
+                    flashcardViewEl.classList.add('hidden');
+                    noResultsEl.classList.remove('hidden');
+                } else {
+                    noResultsEl.classList.add('hidden');
+                    flashcardViewEl.classList.remove('hidden');
+                    flashcardViewEl.classList.add('flex');
+                    updateFlashcard();
+                }
+            }
+        }
+
+        // 綁定所有事件
+        function setupEventListeners() {
+            btnListView.addEventListener('click', () => setMode('list'));
+            btnFlashcardView.addEventListener('click', () => setMode('flashcard'));
+            
+            searchInput.addEventListener('input', handleSearch);
+
+            // 閃卡翻轉事件
+            document.getElementById('flashcard').addEventListener('click', () => {
+                if(currentTerms.length === 0) return;
+                isFlipped = !isFlipped;
+                if (isFlipped) {
+                    flashcardInner.classList.add('rotate-y-180');
+                } else {
+                    flashcardInner.classList.remove('rotate-y-180');
+                }
+            });
+
+            // 上一個按鈕
+            btnPrev.addEventListener('click', (e) => {
+                e.stopPropagation(); // 避免觸發翻轉
+                if (currentTerms.length === 0) return;
+                
+                // 先翻回正面再切換
+                if (isFlipped) {
+                    flashcardInner.classList.remove('rotate-y-180');
+                    isFlipped = false;
+                    setTimeout(() => {
+                        flashcardIndex = (flashcardIndex - 1 + currentTerms.length) % currentTerms.length;
+                        updateFlashcard();
+                    }, 300); // 等待一半的翻轉動畫時間
+                } else {
+                    flashcardIndex = (flashcardIndex - 1 + currentTerms.length) % currentTerms.length;
+                    updateFlashcard();
+                }
+            });
+
+            // 下一個按鈕
+            btnNext.addEventListener('click', (e) => {
+                e.stopPropagation(); // 避免觸發翻轉
+                if (currentTerms.length === 0) return;
+
+                // 先翻回正面再切換
+                if (isFlipped) {
+                    flashcardInner.classList.remove('rotate-y-180');
+                    isFlipped = false;
+                    setTimeout(() => {
+                        flashcardIndex = (flashcardIndex + 1) % currentTerms.length;
+                        updateFlashcard();
+                    }, 300);
+                } else {
+                    flashcardIndex = (flashcardIndex + 1) % currentTerms.length;
+                    updateFlashcard();
+                }
+            });
+        }
+
+        // 啟動程式
+        init();
+
+    </script>
+</body>
+</html>
